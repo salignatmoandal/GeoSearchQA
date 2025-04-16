@@ -1,4 +1,4 @@
-# GeoSearchQA
+# GeoSearchQA - Model Context Protocol 
 A context-aware AI assistant that leverages geolocation data and local information to provide relevant answers to user queries.
 
 # Overview
