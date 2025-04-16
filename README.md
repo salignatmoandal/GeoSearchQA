@@ -33,7 +33,7 @@ geo-mcp-llama/
 ```
 
 # Quick Start 
-## Prequisites
+ **Prequisites**
 - Docker & Docker Compose
 # Installation 
 ```
@@ -42,4 +42,42 @@ cd geosearchqa
 
 cp .env.example .env  # Then edit .env with your API keys
 ```
+
+# Build & Run 
+Use the included `Makefile` for convenience:
+```
+make docker-build     # Build the API and Ollama containers
+make docker-run       # Run both containers
+```
+**Then pull the model inside the Ollama container:**
+```
+docker exec -it geosearchqa-ollama-1 sh
+ollama pull llama3:8b
+exit
+```
+
+Or use another model, such as mistral:7b, by updating .env:
+```
+MODEL_NAME=mistral:7b
+```
+
+# API Usage
+_The main API endpoint is_
+```
+POST /api/v1/chat/completions
+```
+
+# Sample curl Request
+```
+curl -X POST http://localhost:8000/api/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "What are the best wine bars in Montmartre that serve orange wine and are open on Monday night?"}
+    ],
+    "max_tokens": 150
+  }'
+
+```
+
 
