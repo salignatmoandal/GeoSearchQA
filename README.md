@@ -34,6 +34,9 @@ geo-mcp-llama/
 
 # Installation 
 1. Clone repository 
-   `git clone https://github.com/yourusername/geosearchqa.git
-   cd geosearchqa`
+   ```git clone https://github.com/yourusername/geosearchqa.git
+   cd geosearchqa
+2. Create .env file based on the example 
+   ```cp .env.example .env
+   # Edit .env with your API keys
 
