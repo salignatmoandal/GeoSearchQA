@@ -1,0 +1,11 @@
+# .env.example
+# Clés API - remplacez par vos propres clés
+BRAVE_API_KEY=votre_clé_api_brave_ici
+
+# Configuration Ollama
+OLLAMA_BASE_URL=http://localhost:11434
+MODEL_NAME=llama2
+
+# Configuration de l'application
+DEBUG=False
+LOG_LEVEL=INFO
