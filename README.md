@@ -80,7 +80,8 @@ curl -X POST http://localhost:8000/api/v1/chat/completions \
 
 ```
 # Coming Soon
-✅ Brave Search API integration with citation support (MCP-compliant)
-✅ Voice command input and vocal response output
-✅ Mobile interface + geolocated results on maps
+- ✅ Brave Search API integration with citation support (MCP-compliant)
+
+- ✅ Voice command input and vocal response output
+- ✅ Mobile interface + geolocated results on maps
 
