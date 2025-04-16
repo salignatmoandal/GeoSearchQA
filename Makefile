@@ -29,7 +29,7 @@ lint:
 
 # Docker
 docker-build:
-	docker build -t geosearchqa:latest .
+	docker compose up --build
 
 docker-run:
 	docker-compose up -d

@@ -1,43 +1,63 @@
 from fastapi import APIRouter, Request
-from app.model.ollama_client import OllamaClient
+from app.model.ollama import OllamaClient
 from app.context.location import LocationService
 from app.core.prompt_builder import PromptBuilder
+from app.services.search_service import SearchService
 from typing import Dict
 import time
 import logging
 
 router = APIRouter()
 ollama_client = OllamaClient()
+search_service = SearchService()
 
 @router.post("/v1/chat/completions")
 async def chat_completion(request: Request) -> Dict:
     try:
         body = await request.json()
-        query = body["messages"][-1]["content"]
+        messages = body.get("messages", [])
         
-        # Récupération de la localisation
-        client_ip = request.client.host
-        logging.info(f"IP client: {client_ip}")
+        # Extraire la dernière requête utilisateur
+        user_query = next((msg["content"] for msg in reversed(messages) 
+                          if msg.get("role") == "user"), "")
         
-        # Pour les IPs privées ou de conteneur, utilisez directement la localisation par défaut
-        if client_ip in ["127.0.0.1", "localhost", "::1"] or client_ip.startswith("172.") or client_ip.startswith("192.168."):
+        if not user_query:
+            return {"error": "No user query found in messages"}
+        
+        # Paramètres MCP
+        mcp_params = body.get("mcp", {})
+        include_sources = mcp_params.get("include_sources", False)
+        max_sources = mcp_params.get("max_sources", 3)
+        
+        # Obtenir la localisation
+        location = await LocationService.get_location_from_ip(request.client.host)
+        if not location:
             location = LocationService.mock_location()
-            logging.info("Utilisation de la localisation mock pour IP locale")
-        else:
-            location = await LocationService.get_location_from_ip(client_ip)
         
-        # Construction du prompt avec contexte
-        prompt = PromptBuilder.build_prompt(
-            query=query,
+        # Recherche contextuelle via Brave Search API
+        search_results = []
+        if include_sources:
+            search_results = await search_service.search_brave(
+                query=user_query,
+                location=location,
+                count=max_sources
+            )
+        
+        # Construction du prompt MCP
+        prompt = PromptBuilder.build_mcp_prompt(
+            query=user_query,
             location=location,
-            search_results=[]  # À implémenter avec Brave Search API
+            search_results=search_results,
+            include_sources=include_sources
         )
         
         # Génération de la réponse
-        response = await ollama_client.generate_completion(prompt)
+        llm_response = await ollama_client.generate_completion(prompt)
+        content = llm_response.get("response", "")
         
-        return {
-            "id": "chatcmpl-" + str(hash(prompt))[:8],
+        # Préparer la réponse MCP
+        response = {
+            "id": f"chatcmpl-{str(hash(prompt))[:8]}",
             "object": "chat.completion",
             "created": int(time.time()),
             "model": "local-llama",
@@ -45,21 +65,28 @@ async def chat_completion(request: Request) -> Dict:
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": response.get("response", "Je n'ai pas pu générer une réponse.")
+                    "content": content
                 },
                 "finish_reason": "stop"
             }]
         }
+        
+        # Ajouter les sources si demandé
+        if include_sources and search_results:
+            response["sources"] = [{
+                "title": result.get("title", ""),
+                "url": result.get("url", ""),
+                "snippet": result.get("description", "")
+            } for result in search_results]
+        
+        return response
+        
     except Exception as e:
-        logging.error(f"Erreur lors du traitement de la requête: {str(e)}")
+        logging.error(f"Erreur: {str(e)}")
         return {
             "error": str(e),
             "choices": [{
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": "Je suis désolé, une erreur s'est produite lors du traitement de votre demande."
-                },
+                "message": {"role": "assistant", "content": "Erreur de traitement"},
                 "finish_reason": "error"
             }]
         }
