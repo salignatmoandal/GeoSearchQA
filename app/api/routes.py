@@ -1,41 +1,45 @@
-from fastapi import APIRouter
-from app.context.location import get_location
-from app.context.favorites import get_favorites
-from app.core.prompt_builder import build_prompt
-from app.model.ollama import query_ollama
-from fastmcp import FastMCP
+from fastapi import APIRouter, Request
+from app.model.ollama import OllamaClient
+from app.context.location import LocationService
+from app.core.prompt_builder import PromptBuilder
+from typing import Dict
+import time
 
 router = APIRouter()
-mcp = FastMCP("GeoMCP")  # Nom de ton assistant contextuel
+ollama_client = OllamaClient()
 
-# 👉 Optionnel : pour exposer MCP avec FastAPI
 @router.post("/v1/chat/completions")
-async def chat_endpoint(req: dict):
-    """
-    MCP-style endpoint compatible avec FastMCP
-    """
-    input_text = req.get("input")
-    resources = req.get("resources", [])
-
-    # Chargement du model
-   
-    # Chargement des ressources
-    context = {}
-    if "location://current" in resources:
-        context["location://current"] = await get_location()
-    if "favorites://list" in resources:
-        context["favorites://list"] = await get_favorites()
-
-    # Construction du prompt
-    prompt = build_prompt(context.get("location://current", ""), context.get("favorites://list", []), input_text)
-    # Utilisation du model  
-    # Appel au modèle (Ollama)
-    response = await query_ollama(prompt)
-
+async def chat_completion(request: Request) -> Dict:
+    body = await request.json()
+    query = body["messages"][-1]["content"]
+    
+    # Récupération de la localisation
+    client_ip = request.client.host
+    location = await LocationService.get_location_from_ip(client_ip)
+    if not location:
+        location = LocationService.mock_location()
+    
+    # Construction du prompt avec contexte
+    prompt = PromptBuilder.build_prompt(
+        query=query,
+        location=location,
+        search_results=[]  # À implémenter avec Brave Search API
+    )
+    
+    # Génération de la réponse
+    response = await ollama_client.generate_completion(prompt)
+    
     return {
-        "id": "chatcmpl-local",
-        "model": "llama3",
-        "choices": [
-            {"message": {"role": "assistant", "content": response}}
-        ]
+        "id": "chatcmpl-" + str(hash(prompt))[:8],
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": "local-llama2",
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": response["response"]
+            },
+            "finish_reason": "stop"
+        }]
     }

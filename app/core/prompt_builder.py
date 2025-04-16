@@ -1,38 +1,26 @@
 # app/core/prompt_builder.py
+from app.context.location import Location
+from typing import List, Dict
 
-def build_prompt(ctx: dict, user_question: str) -> str:
-    """
-    Assemble un prompt structuré avec tout le contexte enrichi.
-    """
-    loc = ctx.get("location", "lieu inconnu")
-    favorites = ctx.get("favorites", [])
-    search = ctx.get("search", [])
-    memory = ctx.get("memory", "")
+class PromptBuilder:
+    @staticmethod
+    def build_prompt(query: str, location: Location, search_results: List[Dict]) -> str:
+        context = f"""Location actuelle:
+- Ville: {location.city}
+- Pays: {location.country}
+- Coordonnées: {location.latitude}, {location.longitude}
 
-    fav_text = "\n".join([
-        f"- {p['name']} ({p.get('note', '?')}★) : {p['desc']}"
-        for p in favorites
-    ]) if favorites else "Aucun lieu favori."
-
-    search_text = "\n".join([
-        f"- {s['title']}: {s['snippet']}"
-        for s in search
-    ]) if search else "Aucun résultat web trouvé."
-
-    return f"""
-Tu es un assistant local intelligent.
-Ma localisation : {loc}
-
-Voici mon historique récent :
-{memory or 'Aucun historique.'}
-
-Voici mes lieux préférés :
-{fav_text}
-
-Voici les résultats web actuels :
-{search_text}
-
-Ma question : \"{user_question}\"
-
-Réponds-moi de manière utile, précise et personnalisée.
+Résultats de recherche pertinents:
 """
+        for idx, result in enumerate(search_results, 1):
+            context += f"{idx}. {result['title']} - {result['description']}\n"
+
+        prompt = f"""En utilisant le contexte ci-dessous, réponds à la question de manière naturelle et utile.
+Tu dois te concentrer sur les informations locales et pertinentes pour l'utilisateur.
+
+{context}
+
+Question: {query}
+
+Réponse:"""
+        return prompt
