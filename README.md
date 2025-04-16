@@ -9,3 +9,11 @@ Location-aware responses using GPS or IP-based geolocation
 Integration with Llama models via Ollama
 Context building with local search results
 Docker-based deployment for easy setup
+
+# Architecture 
+
+# Installation 
+1. Clone repository 
+   `git clone https://github.com/yourusername/geosearchqa.git
+   cd geosearchqa`
+
