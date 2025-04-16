@@ -14,29 +14,32 @@ Docker-based deployment for easy setup
 ```
 geo-mcp-llama/
 ├── app/
-│   ├── api/
-│   │   └── routes.py              # 🎯 /v1/chat/completions endpoint
-│   ├── context/
-│   │   ├── location.py            #  GPS or IP-based location
-│   │   ├── favorites.py           #  Custom favorite places
-│   ├── model/
-│   │   └── ollama_client.py       #  HTTP calls to Ollama (LLaMA3)
-│   ├── core/
-│   │   └── prompt_builder.py      #  Assembles context + question
-│   ├── main.py                    #  Launches FastAPI app
-│   └── config.py                  #  Loads .env + constants
-├── .env                           #  API keys, local configs
-├── requirements.txt               #  Python dependencies
-├── Dockerfile                     #  Containerization
-├── docker-compose.yml             # Multi-container setup
-└── Makefile                       #  Build and deployment commands
+│   ├── api/                    # API endpoints
+│   │   └── routes.py           # /api/v1/chat/completions
+│   ├── context/                # Location + user context
+│   │   ├── location.py         # GPS/IP-based geolocation logic
+│   │   └── favorites.py        # User-defined favorite places
+│   ├── core/                   # Prompt building logic
+│   │   └── prompt_builder.py   # Constructs prompts with context
+│   ├── model/                  # Ollama client interface
+│   │   └── ollama_client.py    # Calls to Ollama API
+│   ├── config.py               # .env loader and app constants
+│   └── main.py                 # FastAPI app launcher
+├── .env                        # Environment variables
+├── Dockerfile                  # App container
+├── docker-compose.yml          # Multi-container (API + Ollama)
+├── Makefile                    # Build and run automation
+└── requirements.txt            # Python dependencies
 ```
 
+# Quick Start 
+## Prequisites
+- Docker & Docker Compose
 # Installation 
-1. Clone repository 
-   ```git clone https://github.com/yourusername/geosearchqa.git
-   cd geosearchqa
-2. Create .env file based on the example 
-   ```cp .env.example .env
-   # Edit .env with your API keys
+```
+git clone https://github.com/yourusername/geosearchqa.git
+cd geosearchqa
+
+cp .env.example .env  # Then edit .env with your API keys
+```
 
